@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ability Haste Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e14;
+    --panel:#111a24;
+    --panel-2:#0d151e;
+    --border:#243244;
+    --gold:#c8aa6e;
+    --gold-bright:#f0d9a3;
+    --cyan:#0ac8b9;
+    --cyan-dim:#0a8a80;
+    --text:#e9e4d8;
+    --muted:#7d8aa0;
+    --rank-dim:#2a3a4d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:radial-gradient(ellipse at top, #0f1621 0%, var(--bg) 55%);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  .layout{
+    display:flex;
+    max-width:1180px;
+    margin:0 auto;
+    min-height:100vh;
+  }
+  .sidebar{
+    width:290px;
+    flex-shrink:0;
+    background:var(--panel-2);
+    border-right:1px solid var(--border);
+    padding:20px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .brand{
+    font-family:'Cinzel',serif;
+    font-weight:700;
+    font-size:19px;
+    letter-spacing:0.5px;
+    color:var(--gold-bright);
+    padding:0 6px;
+  }
+  .brand span{color:var(--cyan);}
+  .search-box{
+    position:relative;
+  }
+  .search-box input{
+    width:100%;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:6px;
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    outline:none;
+  }
+  .search-box input:focus{border-color:var(--gold);}
+  .search-box input::placeholder{color:var(--muted);}
+  .champ-list{
+    overflow-y:auto;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    padding-right:2px;
+  }
+  .champ-list::-webkit-scrollbar{width:6px;}
+  .champ-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  .champ-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:7px 8px;
+    border-radius:6px;
+    cursor:pointer;
+    border:1px solid transparent;
+  }
+  .champ-row:hover{background:var(--panel);}
+  .champ-row.active{
+    background:linear-gradient(90deg, rgba(200,170,110,0.14), transparent);
+    border-color:var(--gold);
+  }
+  .champ-row img{
+    width:32px;height:32px;border-radius:4px;
+    border:1px solid var(--border);
+  }
+  .champ-row .name{font-size:13px;}
+  .champ-row .title{font-size:10.5px;color:var(--muted);}
+
+  .main{
+    flex:1;
+    padding:28px 34px;
+    min-width:0;
+  }
+  .placeholder{
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    color:var(--muted);
+    text-align:center;
+    gap:8px;
+    padding-top:120px;
+  }
+  .placeholder .glyph{
+    font-family:'Cinzel',serif;
+    font-size:40px;
+    color:var(--border);
+  }
+
+  .champ-header{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    margin-bottom:22px;
+  }
+  .champ-header img{
+    width:64px;height:64px;border-radius:8px;
+    border:1px solid var(--gold);
+  }
+  .champ-header h1{
+    font-family:'Cinzel',serif;
+    font-size:26px;
+    margin:0;
+    color:var(--gold-bright);
+    letter-spacing:0.3px;
+  }
+  .champ-header .subtitle{
+    color:var(--muted);
+    font-size:13px;
+    margin-top:2px;
+  }
+
+  .haste-panel{
+    display:flex;
+    align-items:center;
+    gap:22px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px 22px;
+    margin-bottom:26px;
+    flex-wrap:wrap;
+  }
+  .haste-dial{flex-shrink:0;}
+  .haste-controls{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    flex:1;
+    min-width:220px;
+  }
+  .haste-controls label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.8px;
+    color:var(--muted);
+  }
+  .haste-input-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .haste-input-row input[type=range]{
+    flex:1;
+    accent-color:var(--cyan);
+  }
+  .haste-input-row input[type=number]{
+    width:70px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--gold-bright);
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    font-weight:600;
+    padding:6px 8px;
+    border-radius:6px;
+    text-align:center;
+  }
+  .haste-chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .haste-chips button{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--muted);
+    font-size:11.5px;
+    padding:4px 10px;
+    border-radius:14px;
+    cursor:pointer;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .haste-chips button:hover{border-color:var(--gold);color:var(--gold-bright);}
+
+  .abilities-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
+    gap:14px;
+  }
+  .ability-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+    position:relative;
+    overflow:hidden;
+  }
+  .ability-card::before{
+    content:'';
+    position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg, var(--gold), transparent);
+  }
+  .ability-card.passive::before{background:linear-gradient(90deg, var(--cyan), transparent);}
+  .ability-top{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .ability-top img{
+    width:38px;height:38px;border-radius:6px;
+    border:1px solid var(--border);
+  }
+  .ability-key{
+    font-family:'Cinzel',serif;
+    font-weight:600;
+    font-size:12px;
+    color:var(--bg);
+    background:var(--gold);
+    width:20px;height:20px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:4px;
+    position:absolute;
+    top:12px;right:12px;
+  }
+  .ability-card.passive .ability-key{background:var(--cyan);}
+  .ability-name{
+    font-size:14px;
+    font-weight:600;
+    color:var(--text);
+  }
+  .no-cd{
+    font-size:12px;
+    color:var(--muted);
+    font-style:italic;
+    padding-top:4px;
+  }
+  .cd-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .cd-table th{
+    text-align:right;
+    color:var(--muted);
+    font-weight:500;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    padding:3px 0;
+  }
+  .cd-table th:first-child, .cd-table td:first-child{text-align:left;}
+  .cd-table td{
+    text-align:right;
+    padding:3px 0;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .cd-table .rank-label{color:var(--muted);}
+  .cd-table .base-val{color:var(--text);}
+  .cd-table .eff-val{color:var(--cyan);font-weight:600;}
+  .cd-table tr:not(:last-child){border-bottom:1px solid var(--panel-2);}
+
+  .loading{color:var(--muted);padding:40px;text-align:center;font-size:13px;}
+  .error-box{
+    background:#2a1414;border:1px solid #5a2a2a;color:#e8b0b0;
+    padding:14px 18px;border-radius:8px;font-size:13px;margin-bottom:20px;
+  }
+
+  @media (max-width:760px){
+    .layout{flex-direction:column;}
+    .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);max-height:280px;}
+    .main{padding:20px;}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar">
+    <div class="brand">HASTE<span>//</span>CALC</div>
+    <div class="search-box">
+      <input type="text" id="search" placeholder="Search champion...">
+    </div>
+    <div class="champ-list" id="champList">
+      <div class="loading">Loading champion roster...</div>
+    </div>
+  </div>
+  <div class="main" id="main">
+    <div class="placeholder">
+      <div class="glyph">&#10022;</div>
+      <div>Select a champion to view ability cooldowns</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DDRAGON = 'https://ddragon.leagueoflegends.com';
+let VERSION = null;
+let CHAMPIONS = {};
+let CURRENT_CHAMPION = null;
+let HASTE = 0;
+
+const champListEl = document.getElementById('champList');
+const mainEl = document.getElementById('main');
+const searchEl = document.getElementById('search');
+
+function effectiveCD(base, haste){
+  return base / (1 + haste/100);
+}
+
+async function init(){
+  try{
+    const versions = await fetch(`${DDRAGON}/api/versions.json`).then(r=>r.json());
+    VERSION = versions[0];
+    const data = await fetch(`${DDRAGON}/cdn/${VERSION}/data/en_US/champion.json`).then(r=>r.json());
+    CHAMPIONS = data.data;
+    renderChampList(Object.values(CHAMPIONS).sort((a,b)=>a.name.localeCompare(b.name)));
+  }catch(err){
+    champListEl.innerHTML = `<div class="error-box">Couldn't load champion data. Check your connection and reload.</div>`;
+  }
+}
+
+function renderChampList(list){
+  champListEl.innerHTML = '';
+  list.forEach(c=>{
+    const row = document.createElement('div');
+    row.className = 'champ-row' + (CURRENT_CHAMPION===c.id ? ' active' : '');
+    row.innerHTML = `
+      <img src="${DDRAGON}/cdn/${VERSION}/img/champion/${c.image.full}" alt="${c.name}">
+      <div>
+        <div class="name">${c.name}</div>
+        <div class="title">${c.title}</div>
+      </div>`;
+    row.addEventListener('click', ()=>selectChampion(c.id));
+    champListEl.appendChild(row);
+  });
+}
+
+searchEl.addEventListener('input', ()=>{
+  const q = searchEl.value.trim().toLowerCase();
+  const filtered = Object.values(CHAMPIONS)
+    .filter(c=>c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  renderChampList(filtered);
+});
+
+async function selectChampion(id){
+  CURRENT_CHAMPION = id;
+  renderChampList(Object.values(CHAMPIONS).filter(c=>{
+    const q = searchEl.value.trim().toLowerCase();
+    return c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q);
+  }).sort((a,b)=>a.name.localeCompare(b.name)));
+
+  mainEl.innerHTML = `<div class="loading">Loading abilities...</div>`;
+  try{
+    const full = await fetch(`${DDRAGON}/cdn/${VERSION}/data/en_US/champion/${id}.json`).then(r=>r.json());
+    const champ = full.data[id];
+    renderChampion(champ);
+  }catch(err){
+    mainEl.innerHTML = `<div class="error-box">Couldn't load ability data for this champion.</div>`;
+  }
+}
+
+function drawHasteDial(haste){
+  const cdrPct = (haste/(100+haste))*100;
+  const radius = 42;
+  const circumference = 2*Math.PI*radius;
+  const clampedPct = Math.min(cdrPct, 100);
+  const dash = circumference * (clampedPct/100);
+  return `
+    <svg width="112" height="112" viewBox="0 0 112 112">
+      <circle cx="56" cy="56" r="${radius}" fill="none" stroke="#1a2430" stroke-width="8"/>
+      <circle cx="56" cy="56" r="${radius}" fill="none" stroke="#0ac8b9" stroke-width="8"
+        stroke-dasharray="${dash} ${circumference}" stroke-linecap="round"
+        transform="rotate(-90 56 56)"/>
+      <text x="56" y="52" text-anchor="middle" fill="#f0d9a3" font-family="JetBrains Mono, monospace" font-size="22" font-weight="700">${haste}</text>
+      <text x="56" y="68" text-anchor="middle" fill="#7d8aa0" font-family="Inter, sans-serif" font-size="9" letter-spacing="0.5">HASTE</text>
+    </svg>`;
+}
+
+function cdRow(label, values, haste){
+  const cells = values.map(v=>{
+    const eff = effectiveCD(v, haste);
+    return `<td class="base-val">${v}s <span class="eff-val">&#8594; ${eff.toFixed(1)}s</span></td>`;
+  }).join('');
+  return `<tr><td class="rank-label">${label}</td>${cells}</tr>`;
+}
+
+function renderAbilityCard(spellData, keyLabel, isPassive){
+  const iconBase = isPassive
+    ? `${DDRAGON}/cdn/${VERSION}/img/passive/${spellData.image.full}`
+    : `${DDRAGON}/cdn/${VERSION}/img/spell/${spellData.image.full}`;
+
+  let bodyHtml = '';
+  const cooldowns = spellData.cooldown;
+  if(!cooldowns || cooldowns.length===0 || cooldowns.every(v=>v===0)){
+    bodyHtml = `<div class="no-cd">No cooldown (passive or on-hit effect)</div>`;
+  }else{
+    const rankHeaders = cooldowns.map((_,i)=>`<th>Rk ${i+1}</th>`).join('');
+    bodyHtml = `
+      <table class="cd-table">
+        <tr><th></th>${rankHeaders}</tr>
+        ${cdRow('Base &#8594; Eff.', cooldowns, HASTE)}
+      </table>`;
+  }
+
+  return `
+    <div class="ability-card ${isPassive?'passive':''}">
+      <div class="ability-key">${keyLabel}</div>
+      <div class="ability-top">
+        <img src="${iconBase}" alt="${spellData.name}">
+        <div class="ability-name">${spellData.name}</div>
+      </div>
+      ${bodyHtml}
+    </div>`;
+}
+
+function renderChampion(champ){
+  const keys = ['Q','W','E','R'];
+  const spellCards = champ.spells.map((s,i)=>renderAbilityCard(s, keys[i], false)).join('');
+  const passiveCard = renderAbilityCard({
+    name: champ.passive.name,
+    image: champ.passive.image,
+    cooldown: []
+  }, 'P', true);
+
+  mainEl.innerHTML = `
+    <div class="champ-header">
+      <img src="${DDRAGON}/cdn/${VERSION}/img/champion/${champ.image.full}" alt="${champ.name}">
+      <div>
+        <h1>${champ.name}</h1>
+        <div class="subtitle">${champ.title}</div>
+      </div>
+    </div>
+
+    <div class="haste-panel">
+      <div class="haste-dial" id="hasteDial">${drawHasteDial(HASTE)}</div>
+      <div class="haste-controls">
+        <label>Ability haste</label>
+        <div class="haste-input-row">
+          <input type="range" id="hasteSlider" min="0" max="300" step="1" value="${HASTE}">
+          <input type="number" id="hasteNumber" min="0" max="1000" value="${HASTE}">
+        </div>
+        <div class="haste-chips">
+          ${[0,20,40,60,80,100,150].map(v=>`<button data-haste="${v}">${v}</button>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="abilities-grid">
+      ${passiveCard}
+      ${spellCards}
+    </div>
+  `;
+
+  const slider = document.getElementById('hasteSlider');
+  const number = document.getElementById('hasteNumber');
+
+  function updateHaste(val){
+    HASTE = Math.max(0, Math.min(1000, val));
+    slider.value = Math.min(HASTE, 300);
+    number.value = HASTE;
+    document.getElementById('hasteDial').innerHTML = drawHasteDial(HASTE);
+    document.querySelectorAll('.cd-table').forEach((table, idx)=>{
+      const spell = champ.spells[idx];
+      if(!spell) return;
+      const row = table.querySelector('tr:last-child');
+      row.innerHTML = cdRow('Base &#8594; Eff.', spell.cooldown, HASTE).replace(/<\/?tr>/g,'');
+    });
+  }
+
+  slider.addEventListener('input', ()=>updateHaste(parseInt(slider.value||'0',10)));
+  number.addEventListener('input', ()=>updateHaste(parseInt(number.value||'0',10)));
+  document.querySelectorAll('.haste-chips button').forEach(btn=>{
+    btn.addEventListener('click', ()=>updateHaste(parseInt(btn.dataset.haste,10)));
+  });
+}
+
+init();
+</script>
+</body>
+</html>
