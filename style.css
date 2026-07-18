@@ -341,4 +341,8 @@ body{
 @media (max-width:760px){
   .topbar{ flex-direction:column; align-items:flex-start; gap:12px; }
   #champSelect{ max-width:none; width:100%; }
+  /* Loading-screen splash art is already portrait-cropped and well
+     composed, so it doesn't need the same upward bias the wide splash
+     art gets below - plain centering looks best here. */
+  .splash-layer{ background-position:center; }
 }

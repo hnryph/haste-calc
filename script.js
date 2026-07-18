@@ -125,15 +125,39 @@ function realSkins(champ){
   return champ.skins.filter(s => s.parentSkin === undefined);
 }
 
+// Tracks whichever champion/skin is currently shown as the background,
+// so a resize/orientation change can redraw it in the other format
+// without waiting for the next auto-advance.
+let currentSplashChampId = null;
+let currentSplashSkinNum = null;
+
+/* Data Dragon serves two crops of each skin's art: the wide "splash"
+   used in the client's collection screen, and a taller "loading"
+   crop (already portrait-oriented) used on the loading screen. Below
+   a width breakpoint - matching the same one the rest of the layout
+   uses to switch to its mobile view - we use the loading crop, since
+   it suits narrow/portrait screens far better than a cropped wide image. */
+function isNarrowViewport(){
+  return window.matchMedia('(max-width: 760px)').matches;
+}
+function buildSplashUrl(champId, skinNum){
+  const folder = isNarrowViewport() ? 'loading' : 'splash';
+  return `${DDRAGON}/cdn/img/champion/${folder}/${champId}_${skinNum}.jpg`;
+}
+
 /* Crossfades the full-page background to a new splash art image.
    Two stacked layers are used because a single element can't smoothly
    animate a change to its own background-image with CSS alone: this
    preloads the image into the currently-hidden layer, then flips
    opacity on both layers at once so the swap fades in/out together. */
-function crossfadeSplash(url){
+function crossfadeSplash(champId, skinNum){
+  currentSplashChampId = champId;
+  currentSplashSkinNum = skinNum;
+
   const showEl = splashActiveLayer === 1 ? splashBg2El : splashBg1El;
   const hideEl = splashActiveLayer === 1 ? splashBg1El : splashBg2El;
 
+  const url = buildSplashUrl(champId, skinNum);
   const preload = new Image();
   preload.onload = () => {
     showEl.style.backgroundImage = `url('${url}')`;
@@ -143,6 +167,21 @@ function crossfadeSplash(url){
   };
   preload.src = url;
 }
+
+// If the viewport crosses the narrow/wide breakpoint (e.g. rotating a
+// phone, or resizing a browser window), redraw whatever skin is
+// currently showing using the appropriate crop instead of waiting for
+// the next scheduled skin change.
+let lastViewportWasNarrow = isNarrowViewport();
+window.addEventListener('resize', ()=>{
+  const nowNarrow = isNarrowViewport();
+  if(nowNarrow !== lastViewportWasNarrow){
+    lastViewportWasNarrow = nowNarrow;
+    if(currentSplashChampId !== null){
+      crossfadeSplash(currentSplashChampId, currentSplashSkinNum);
+    }
+  }
+});
 
 /* Starts automatically cycling through a champion's splash art:
    crossfades to the default skin immediately, then advances to the
@@ -157,7 +196,7 @@ function startSplashCycle(champ){
 
   function showIndex(i){
     index = i;
-    crossfadeSplash(`${DDRAGON}/cdn/img/champion/splash/${champ.id}_${skins[index].num}.jpg`);
+    crossfadeSplash(champ.id, skins[index].num);
   }
 
   showIndex(0); // start on the default skin
