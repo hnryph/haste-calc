@@ -1,0 +1,344 @@
+/* ============================================================
+   COLOR PALETTE
+   Defined as CSS variables so the whole theme can be tweaked
+   from one place. Named after the "Hextech" aesthetic of LoL.
+   ============================================================ */
+:root{
+  --bg:#0a0e14;            /* page background */
+  --panel:#111a24;         /* cards, panels */
+  --panel-2:#0d151e;       /* darker nested panels (sidebar, inputs) */
+  --border:#243244;        /* hairline borders */
+  --gold:#c8aa6e;          /* primary accent (Hextech gold) */
+  --gold-bright:#f0d9a3;   /* headings, highlighted gold text */
+  --cyan:#0ac8b9;          /* secondary accent (Hextech cyan) - used for computed/effective values */
+  --cyan-dim:#0a8a80;
+  --text:#e9e4d8;          /* main body text (parchment tone) */
+  --muted:#7d8aa0;         /* secondary/quiet text */
+  --rank-dim:#2a3a4d;
+}
+
+* { box-sizing:border-box; }
+
+body{
+  margin:0;
+  background:radial-gradient(ellipse at top, #0f1621 0%, var(--bg) 55%);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+}
+
+/* ============================================================
+   SPLASH ART BACKGROUND
+   Two stacked layers (.splash-layer) crossfade between each other:
+   JS preloads the next skin's image into the hidden layer, then
+   flips opacity on both at once so the fade is smooth. #splashOverlay
+   sits above both with a dark gradient so text/cards stay readable.
+   All three are fixed so they cover the viewport and don't scroll.
+   ============================================================ */
+.splash-layer{
+  position:fixed;
+  inset:0;
+  background-size:cover;
+  background-position:center 20%;
+  z-index:-2;
+  opacity:0;
+  transition:opacity 2.5s ease-in-out; /* the slow fade between skins */
+}
+#splashOverlay{
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  background:
+    linear-gradient(180deg, rgba(6,9,14,0.55) 0%, rgba(6,9,14,0.80) 45%, rgba(6,9,14,0.96) 100%),
+    radial-gradient(ellipse at top, rgba(6,9,14,0.35) 0%, rgba(6,9,14,0.75) 70%);
+}
+
+/* ============================================================
+   PAGE LAYOUT: top bar (brand + champion dropdown) + main content
+   ============================================================ */
+.layout{
+  max-width:1200px;
+  margin:0 auto;
+  min-height:100vh;
+  padding:0 20px;
+}
+
+/* --- Top bar: brand + champion dropdown --- */
+.topbar{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  padding:24px 0;
+  border-bottom:1px solid var(--border);
+  margin-bottom:28px;
+  flex-wrap:wrap;
+}
+.brand{
+  font-family:'Cinzel',serif;
+  font-weight:700;
+  font-size:19px;
+  letter-spacing:0.5px;
+  color:var(--gold-bright);
+  white-space:nowrap;
+}
+.brand span{ color:var(--cyan); }
+
+/* Champion picker dropdown */
+#champSelect{
+  flex:1;
+  min-width:200px;
+  max-width:360px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:10px 12px;
+  border-radius:6px;
+  font-family:'Inter',sans-serif;
+  font-size:13.5px;
+  outline:none;
+  cursor:pointer;
+}
+#champSelect:focus{ border-color:var(--gold); }
+
+/* --- Main content area --- */
+.main{
+  padding:0 0 40px;
+  min-width:0;
+}
+
+/* Shown before any champion has been picked */
+.placeholder{
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  color:var(--muted);
+  text-align:center;
+  gap:8px;
+  padding-top:120px;
+}
+.placeholder .glyph{
+  font-family:'Cinzel',serif;
+  font-size:40px;
+  color:var(--border);
+}
+
+/* --- Champion header: portrait + name + title --- */
+.champ-header{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  margin-bottom:22px;
+}
+.champ-header img{
+  width:64px; height:64px; border-radius:8px;
+  border:1px solid var(--gold);
+}
+.champ-header h1{
+  font-family:'Cinzel',serif;
+  font-size:26px;
+  margin:0;
+  color:var(--gold-bright);
+  letter-spacing:0.3px;
+}
+.champ-header .subtitle{
+  color:var(--muted);
+  font-size:13px;
+  margin-top:2px;
+  text-transform:uppercase;
+  letter-spacing:0.4px;
+}
+
+/* ============================================================
+   HASTE PANEL: the radial dial + slider/number/quick-pick chips
+   that control the global "ability haste" value used everywhere
+   else on the page.
+   ============================================================ */
+.haste-panel{
+  display:flex;
+  align-items:center;
+  gap:22px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px 22px;
+  margin-bottom:26px;
+  flex-wrap:wrap;
+}
+.haste-dial{ flex-shrink:0; } /* holds the SVG gauge drawn by drawHasteDial() */
+.haste-controls{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  flex:1;
+  min-width:220px;
+}
+.haste-controls label{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.8px;
+  color:var(--muted);
+}
+.haste-input-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.haste-input-row input[type=range]{
+  flex:1;
+  accent-color:var(--cyan);
+}
+.haste-input-row input[type=number]{
+  width:70px;
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  color:var(--gold-bright);
+  font-family:'JetBrains Mono',monospace;
+  font-size:15px;
+  font-weight:600;
+  padding:6px 8px;
+  border-radius:6px;
+  text-align:center;
+}
+/* Quick-pick buttons (0 / 20 / 40 / etc haste shortcuts) */
+.haste-chips{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.haste-chips button{
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  color:var(--muted);
+  font-size:11.5px;
+  padding:4px 10px;
+  border-radius:14px;
+  cursor:pointer;
+  font-family:'JetBrains Mono',monospace;
+}
+.haste-chips button:hover{ border-color:var(--gold); color:var(--gold-bright); }
+/* Thin vertical divider separating the "set to" chips from the "add" chips */
+.haste-chips-divider{
+  width:1px;
+  height:16px;
+  background:var(--border);
+  margin:0 2px;
+}
+/* +5 / +10 buttons add to the current haste rather than setting it -
+   styled in the cyan accent so they read visually as "add" rather
+   than "jump to" like the other chips. */
+.haste-chips .haste-chip-delta{
+  border-color:var(--cyan-dim);
+  color:var(--cyan);
+}
+.haste-chips .haste-chip-delta:hover{
+  border-color:var(--cyan);
+  background:rgba(10,200,185,0.1);
+}
+/* -5 / -10 buttons subtract instead of add - styled red to read as
+   the opposite action from the cyan +5/+10 buttons. */
+.haste-chips .haste-chip-delta-neg{
+  border-color:#7a2d2d;
+  color:#e37a7a;
+}
+.haste-chips .haste-chip-delta-neg:hover{
+  border-color:#e05252;
+  background:rgba(224,82,82,0.1);
+}
+
+/* ============================================================
+   ABILITY CARDS: one card per Passive/Q/W/E/R
+   ============================================================ */
+.abilities-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
+  gap:14px;
+}
+.ability-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 16px;
+  position:relative;
+  overflow:hidden;
+}
+/* Thin gold accent line along the top of each card */
+.ability-card::before{
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, var(--gold), transparent);
+}
+/* Passive cards get a cyan accent instead of gold, to visually separate them from Q/W/E/R */
+.ability-card.passive::before{ background:linear-gradient(90deg, var(--cyan), transparent); }
+
+.ability-top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+.ability-top img{
+  width:38px; height:38px; border-radius:6px;
+  border:1px solid var(--border);
+}
+/* Small badge in the corner of each card showing P / Q / W / E / R */
+.ability-key{
+  font-family:'Cinzel',serif;
+  font-weight:600;
+  font-size:12px;
+  color:var(--bg);
+  background:var(--gold);
+  width:20px; height:20px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:4px;
+  position:absolute;
+  top:12px; right:12px;
+}
+.ability-card.passive .ability-key{ background:var(--cyan); }
+.ability-name{
+  font-size:14px;
+  font-weight:600;
+  color:var(--text);
+}
+/* Shown instead of the cooldown table when an ability has no numeric cooldown */
+.no-cd{
+  font-size:12px;
+  color:var(--muted);
+  font-style:italic;
+  padding-top:4px;
+}
+
+/* Table showing base cooldown -> effective (haste-adjusted) cooldown, per rank */
+.cd-table{ width:100%; border-collapse:collapse; font-size:12px; table-layout:fixed; }
+.cd-table th{
+  text-align:center;
+  color:var(--muted);
+  font-weight:500;
+  font-size:10.5px;
+  text-transform:uppercase;
+  letter-spacing:0.4px;
+  padding:3px 2px 6px;
+  white-space:nowrap;
+}
+.cd-table td{
+  text-align:center;
+  padding:3px 2px;
+  font-family:'JetBrains Mono',monospace;
+  vertical-align:top;
+}
+/* Base and effective values are stacked on their own lines (rather than inline
+   with an arrow) so they never wrap mid-value on narrow columns, and always
+   line up vertically regardless of how many ranks/digits a champion has. */
+.cd-table .cd-cell{ display:flex; flex-direction:column; align-items:center; gap:1px; }
+.cd-table .base-val{ color:var(--muted); font-size:11px; white-space:nowrap; }
+.cd-table .eff-val{ color:var(--cyan); font-weight:600; white-space:nowrap; } /* the haste-adjusted number, in the accent color */
+.cd-table tr:not(:last-child){ border-bottom:1px solid var(--panel-2); }
+
+.loading{ color:var(--muted); padding:40px; text-align:center; font-size:13px; }
+.error-box{
+  background:#2a1414; border:1px solid #5a2a2a; color:#e8b0b0;
+  padding:14px 18px; border-radius:8px; font-size:13px; margin-bottom:20px;
+}
+
+/* Stack the dropdown under the brand on small/mobile screens */
+@media (max-width:760px){
+  .topbar{ flex-direction:column; align-items:flex-start; gap:12px; }
+  #champSelect{ max-width:none; width:100%; }
+}
