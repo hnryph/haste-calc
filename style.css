@@ -19,9 +19,22 @@
 
 * { box-sizing:border-box; }
 
-body{
+/* The gradient lives on <html>, not <body>. This matters for two
+   reasons: (1) iOS Safari paints the "overscroll bounce" area (pull-
+   to-refresh, and the strip revealed when the address bar collapses)
+   using the <html> element's own background, not the body's - so if
+   html has none, that area falls back to white regardless of what
+   body looks like. (2) If body ALSO had its own background here, it
+   would paint above the negative-z-index splash-art layers below and
+   hide them completely - body is left transparent on purpose so
+   nothing blocks them. */
+html{
   margin:0;
   background:radial-gradient(ellipse at top, #0f1621 0%, var(--bg) 55%);
+}
+
+body{
+  margin:0;
   color:var(--text);
   font-family:'Inter',sans-serif;
   min-height:100vh;
@@ -60,7 +73,15 @@ body{
   max-width:1200px;
   margin:0 auto;
   min-height:100vh;
-  padding:0 20px;
+  /* Base 20px padding, but never less than the device's safe-area
+     inset (e.g. the front camera cutout in landscape) - env() returns
+     0 on devices without a notch, so this is a no-op there. Only the
+     content wrapper gets this; the splash-art background layers below
+     are separate fixed elements and still extend fully edge-to-edge. */
+  padding-left:max(20px, env(safe-area-inset-left));
+  padding-right:max(20px, env(safe-area-inset-right));
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
 }
 
 /* --- Top bar: brand + champion dropdown --- */
